@@ -11,7 +11,8 @@ import {
   saveRecording, listRecordings, getRecording, deleteRecording,
   estimateUsage, formatTitle, formatDuration,
 } from "./storage.js";
-import { segmentsToText, segmentsToSrt, finalSegments, wordCount, mergeFinalSegments } from "./srt.js";
+import { segmentsToText, segmentsToSrt, segmentsToVtt, finalSegments, wordCount, mergeFinalSegments } from "./srt.js";
+import { segmentAtTime, formatClock, burnCaptions } from "./captions.js";
 
 const $ = (id) => document.getElementById(id);
 const statusEl = $("status");
@@ -122,7 +123,13 @@ function renderLive() {
   }
   for (const seg of liveFinals) {
     const p = document.createElement("p");
-    p.textContent = seg.transcript;
+    if (typeof seg.fromTimestampMs === "number") {
+      const ts = document.createElement("span");
+      ts.className = "ts";
+      ts.textContent = `[${formatClock(seg.fromTimestampMs)}] `;
+      p.appendChild(ts);
+    }
+    p.appendChild(document.createTextNode(seg.transcript));
     liveEl.appendChild(p);
   }
   if (liveInterim) {
@@ -477,6 +484,27 @@ $("library-list").addEventListener("click", async (e) => {
   }
 });
 
+// Synced playback in the detail view: the row spoken at the current
+// playback time is highlighted and scrolled into view; tapping a row
+// seeks the media to it.
+let detailMedia = null;
+let detailSegments = [];
+let lastActiveFrom = -1;
+
+function highlightSegment(timeMs) {
+  const rows = $("detail-transcript").querySelectorAll(".seg-row");
+  if (!rows.length) return;
+  const active = segmentAtTime(detailSegments, timeMs);
+  const from = active ? (active.fromTimestampMs ?? -1) : -1;
+  if (from === lastActiveFrom) return;
+  lastActiveFrom = from;
+  for (const row of rows) {
+    const isActive = from !== -1 && Number(row.dataset.from) === from;
+    row.classList.toggle("active", isActive);
+    if (isActive) row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
 async function openDetail(id) {
   const entry = await getRecording(id);
   if (!entry) return;
@@ -489,18 +517,49 @@ async function openDetail(id) {
   if (detailUrl) URL.revokeObjectURL(detailUrl);
   detailUrl = URL.createObjectURL(entry.mediaBlob);
   const url = detailUrl;
-  if (entry.kind === "camera") {
+  // A file entry can itself be a video (the file input accepts
+  // video/*), so video-ness comes from the media type, not the kind.
+  const isVideo = entry.kind === "camera"
+    || (entry.mediaBlob && entry.mediaBlob.type && entry.mediaBlob.type.startsWith("video/"));
+  if (isVideo) {
     player.hidden = false;
     audio.hidden = true;
     player.src = url;
-    $("dl-video").hidden = false;
+    detailMedia = player;
   } else {
     player.hidden = true;
     audio.hidden = false;
     audio.src = url;
-    $("dl-video").hidden = true;
+    detailMedia = audio;
   }
-  $("detail-transcript").textContent = entry.text || "No speech was detected in this recording.";
+  $("dl-video").hidden = entry.kind !== "camera";
+  detailSegments = entry.segments || [];
+  lastActiveFrom = -1;
+  detailMedia.ontimeupdate = () => highlightSegment(detailMedia.currentTime * 1000);
+  detailMedia.onseeked = () => highlightSegment(detailMedia.currentTime * 1000);
+
+  const transcriptEl = $("detail-transcript");
+  transcriptEl.innerHTML = "";
+  if (!detailSegments.length) {
+    transcriptEl.textContent = "No speech was detected in this recording.";
+  } else {
+    for (const seg of detailSegments) {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "seg-row";
+      row.dataset.from = String(seg.fromTimestampMs ?? 0);
+      const ts = document.createElement("span");
+      ts.className = "ts";
+      ts.textContent = `[${formatClock(seg.fromTimestampMs ?? 0)}] `;
+      row.append(ts, document.createTextNode(seg.transcript));
+      row.addEventListener("click", () => {
+        detailMedia.currentTime = (seg.fromTimestampMs ?? 0) / 1000;
+        detailMedia.play().catch(() => {});
+      });
+      transcriptEl.appendChild(row);
+    }
+  }
+  highlightSegment(0);
   $("detail-meta").textContent =
     `${entry.kind === "file" ? "File" : "Camera"} · ${formatDuration(entry.durationMs)} · ${wordCount(entry.text || "")} words`;
   const slug = slugTitle(entry.title);
@@ -509,6 +568,37 @@ async function openDetail(id) {
     new Blob([entry.text || ""], { type: "text/plain" }), `speaklog-${slug}.txt`);
   $("dl-srt").onclick = () => downloadBlob(
     new Blob([segmentsToSrt(entry.segments || [])], { type: "text/plain" }), `speaklog-${slug}.srt`);
+  $("dl-vtt").onclick = () => downloadBlob(
+    new Blob([segmentsToVtt(entry.segments || [])], { type: "text/vtt" }), `speaklog-${slug}.vtt`);
+  // Caption burn-in is only offered for video with something to burn.
+  $("caption-export").hidden = !(isVideo && detailSegments.length);
+  $("burn-status").textContent = "";
+  $("btn-burn").onclick = async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const style = {
+      font: $("cap-font").value,
+      size: $("cap-size").value,
+      color: $("cap-color").value,
+      position: $("cap-position").value,
+    };
+    setStatus("Exporting video with captions — playing through in real time…");
+    try {
+      const blob = await burnCaptions(entry.mediaBlob, entry.segments, style, (cur, total) => {
+        $("burn-status").textContent = total > 0
+          ? `Exporting… ${Math.round((cur / total) * 100)}%`
+          : "Exporting…";
+      });
+      downloadBlob(blob, `speaklog-${slug}-captioned.webm`);
+      setStatus("Captioned video downloaded.");
+      $("burn-status").textContent = "";
+    } catch (err) {
+      console.error(err);
+      showError(`Caption export failed: ${err?.message || err}`);
+    } finally {
+      btn.disabled = false;
+    }
+  };
   $("btn-copy-detail").onclick = (e) => {
     if (!entry.text) {
       setStatus("Nothing to copy — no speech was detected in this recording.");

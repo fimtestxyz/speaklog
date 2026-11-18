@@ -25,7 +25,8 @@ plain ES modules served as static files.
 | `transcriber.js` | MediaPipe wrapper: model download/progress/cache, GPU→CPU fallback, resampling |
 | `audio-processor.js` | AudioWorkletProcessor: buffers mic PCM, posts 3200-sample Float32 chunks |
 | `storage.js` | IndexedDB wrapper: save/list/get/delete recordings, usage estimate |
-| `srt.js` | Transcript formatting: plain text + SRT from segments |
+| `srt.js` | Transcript formatting: plain text + SRT + VTT from segments |
+| `captions.js` | Caption display/sync/burn-in: `formatClock`, `segmentAtTime`, `captionFont`, `wrapCaptionLines`, `burnCaptions` (canvas re-record) |
 | `test/*.test.mjs` | Node unit tests, one per module |
 | `spec.md` | Product spec (source of truth for scope) |
 | `TODO-PAID.md` | Paid features — not built in v1 |
@@ -49,7 +50,7 @@ plain ES modules served as static files.
 
 ```bash
 node --check app.js && node --check transcriber.js && node --check audio-processor.js
-node --check storage.js && node --check srt.js
+node --check storage.js && node --check srt.js && node --check captions.js
 for t in test/*.test.mjs; do node "$t"; done
 ```
 
@@ -88,3 +89,10 @@ the change, it does not get "fixed later".
   never survives. Copy goes through the data model (Copy button +
   Clipboard API with a textarea fallback), not the selection; the
   transcript areas also carry explicit `user-select: text`.
+- **Burn-in export runs in real time.** `burnCaptions` replays the
+  video through a canvas and re-records it, so a 1-minute video takes
+  about 1 minute; the UI says so and shows progress. Audio comes from
+  the video element's own `captureStream()` — the element is not
+  muted during export, so the user hears it playing (that is the
+  feedback that it is working). Only video entries get the button;
+  audio-only file entries cannot burn captions onto nothing.

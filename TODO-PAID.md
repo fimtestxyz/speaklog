@@ -25,13 +25,15 @@ live transcription forever. Pro charges for what surrounds it.
   summary costs API money, which is why the paywall is natural here.
   Must be explicit opt-in per summary, transcript only (never video),
   disclosed in the UI.
+- [x] **VTT export + captions burned into video** — DONE FREE
+  2026-11-18 (user chose all-free; was on the paid list, moved out).
+  `.vtt` download, and an export that renders the captions onto the
+  video file itself (canvas capture during playback), with font /
+  size / color / position controls.
 - [ ] **Transcript editing** — click a segment to correct its text;
   edits persist and flow into re-exports.
 - [ ] **Search across recordings** — full-text search over saved
   transcripts in the library.
-- [ ] **VTT export + captions burned into video** — `.vtt` download,
-  and an export that renders the captions onto the video file itself
-  (canvas capture during playback).
 - [ ] **Unlimited library + session length** — part of Pro (see
   pricing sketch); no separate work beyond the limits in Pro plumbing.
 - [ ] **Cloud backup / sync** (v2, architecture change) — needs a

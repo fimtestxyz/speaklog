@@ -81,19 +81,30 @@ Vercel + GitHub Pages, like stickerify. Static only — no backend server.
 - Save to IndexedDB: video blob + transcript segments + metadata.
   Survives reload.
 - Library: newest first, play, delete, storage-used indicator.
-- Download video (`.webm`) + transcript (`.txt` and `.srt` — both free;
-  `.vtt` and burned-in captions are Pro, see TODO-PAID.md).
+- Download video (`.webm`) + transcript (`.txt`, `.srt`, `.vtt` — all
+  free).
 - **Transcribe an existing audio/video file** (clip mode,
   `transcriber.transcribe()`): same engine, no camera needed. Small
   addition, and it is the end-to-end test path for real speech.
+- **Timestamped live transcript**: every final line carries its
+  `[mm:ss]` timestamp; the panel accumulates (streaming results carry
+  only the latest segment — see CLAUDE.md).
+- **Synced playback**: in an entry, the line being spoken is
+  highlighted as the video plays; tapping a line seeks the video to it.
+- **Captions burned into video** (free since 2026-11-18, user chose
+  all-free): export a new `.webm` with the captions rendered onto the
+  picture — font (sans/serif/mono), size, color, position
+  (bottom/top); plays through in real time, so export takes as long
+  as the video.
 - Desktop + mobile browsers (Chrome/Edge best; Safari/Firefox need
   WebGPU or CPU fallback for the model — verify in E2E).
 
 ## Paid features
 
 Not built in v1. The list lives in `TODO-PAID.md` (Pro tier, AI summary,
-transcript editing, search, VTT + burned-in captions, cloud backup).
-Transcription itself is never paywalled.
+transcript editing, search, cloud backup). Transcription itself is never
+paywalled. VTT + burned-in captions were on the paid list but the user
+chose all-free on 2026-11-18, so they are free (see Decision 4).
 
 ## Privacy
 
@@ -109,7 +120,13 @@ Transcription itself is never paywalled.
 - Stop → entry saved, appears in the library, plays back with sound.
 - Download → the `.webm` plays in a standard player; the `.txt`
   matches the on-screen transcript; the `.srt` timestamps line up with
-  the video.
+  the video; the `.vtt` is valid WebVTT.
+- Live transcript → every final line shows its `[mm:ss]` timestamp and
+  lines accumulate (no dropping earlier sentences).
+- Playback → the line being spoken is highlighted as the video plays;
+  tapping a line seeks to it.
+- Caption export → the burned-in `.webm` plays with readable captions
+  in the chosen font/size/color/position, in sync with the audio.
 - Reload the page → library entries are still there.
 - No video/audio is uploaded anywhere.
 - All checks green in CI; live end-to-end test on Vercel before calling
@@ -119,6 +136,13 @@ Transcription itself is never paywalled.
 
 - Speaker diarization ("who said what"), editing the transcript,
   searching across recordings, cloud sync / accounts, share links,
-  captions burned into the video file, summarising the transcript.
+  summarising the transcript.
   (Transcript summarising is a natural v2 — it fits the thought-ledger
   habit of condensing what was said.)
+
+### 4. Captions all free (decided 2026-11-18)
+
+VTT export + captions burned into video were on the paid list in
+`TODO-PAID.md`, but the user chose "全部免费做" (all free) on
+2026-11-18, so both are free in v1. The paid anchor stays the AI
+summary.

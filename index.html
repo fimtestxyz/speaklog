@@ -38,6 +38,11 @@
   .entry-meta { color: #6e6e73; font-size: 0.85rem; }
   #detail-player, #detail-audio { width: 100%; border-radius: 12px; background: #000; }
   #detail-transcript { white-space: pre-wrap; background: #fff; border: 1px solid #e5e5ea; border-radius: 12px; padding: 12px 16px; user-select: text; -webkit-user-select: text; }
+  .ts { color: #8e8e93; font-variant-numeric: tabular-nums; }
+  .seg-row { display: block; width: 100%; text-align: left; background: #fff; border: 1px solid #e5e5ea; border-radius: 8px; padding: 8px 12px; margin: 6px 0; cursor: pointer; }
+  .seg-row.active { background: #fff7e0; border-color: #e0a800; }
+  label { font-size: 0.9rem; color: #3a3a3c; }
+  select { font: inherit; padding: 8px; border-radius: 8px; border: 1px solid #ccc; background: #fff; }
   footer { color: #6e6e73; font-size: 0.85rem; padding-bottom: 32px; }
 </style>
 </head>
@@ -92,14 +97,29 @@
     <video id="detail-player" controls playsinline hidden></video>
     <audio id="detail-audio" controls hidden></audio>
     <h3>Transcript</h3>
-    <p id="detail-transcript"></p>
+    <div id="detail-transcript"></div>
     <div class="controls">
       <button id="dl-video" type="button">Download video (.webm)</button>
       <button id="dl-txt" type="button">Download transcript (.txt)</button>
       <button id="dl-srt" type="button">Download transcript (.srt)</button>
+      <button id="dl-vtt" type="button">Download transcript (.vtt)</button>
       <button id="btn-copy-detail" type="button">Copy transcript</button>
       <button id="btn-delete-detail" type="button" class="danger">Delete</button>
       <button id="btn-back" type="button" class="secondary">Back to library</button>
+    </div>
+    <div id="caption-export" hidden>
+      <h3>Captions on video</h3>
+      <div class="controls">
+        <label>Font <select id="cap-font"><option value="sans">Sans</option><option value="serif">Serif</option><option value="mono">Mono</option></select></label>
+        <label>Size <select id="cap-size"><option value="small">Small</option><option value="medium" selected>Medium</option><option value="large">Large</option></select></label>
+        <label>Color <select id="cap-color"><option value="#ffffff">White</option><option value="#ffe14d">Yellow</option><option value="#7dd3fc">Blue</option></select></label>
+        <label>Position <select id="cap-position"><option value="bottom">Bottom</option><option value="top">Top</option></select></label>
+      </div>
+      <div class="controls">
+        <button id="btn-burn" type="button">Download video with captions (.webm)</button>
+        <span id="burn-status" class="hint"></span>
+      </div>
+      <p class="hint">Burns the captions into a new copy of the video — it plays through in real time, so a 1-minute video takes about 1 minute to export.</p>
     </div>
   </section>
 </main>

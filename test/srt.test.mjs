@@ -1,7 +1,7 @@
 // Node tests for srt.js. Formatting from real MediaPipe segment objects.
 // Run: node test/srt.test.mjs
 import assert from "node:assert";
-import { formatSrtTime, finalSegments, segmentsToText, segmentsToSrt, wordCount, mergeFinalSegments } from "../srt.js";
+import { formatSrtTime, finalSegments, segmentsToText, segmentsToSrt, wordCount, mergeFinalSegments, formatVttTime, segmentsToVtt } from "../srt.js";
 
 // The example payload from the MediaPipe Audio Transcriber docs: one final
 // segment, one interim hypothesis.
@@ -92,5 +92,16 @@ assert.deepEqual(
 const noTsA = { transcript: "No time.", isFinal: true };
 const noTsB = { transcript: "Still no time.", isFinal: true };
 assert.deepEqual(mergeFinalSegments([noTsA], [noTsA, noTsB]), [noTsA, noTsB]);
+
+// WebVTT: same segments, dots instead of commas, WEBVTT header.
+assert.equal(formatVttTime(0), "00:00:00.000");
+assert.equal(formatVttTime(2500), "00:00:02.500");
+assert.equal(formatVttTime(3723456), "01:02:03.456");
+assert.equal(
+  segmentsToVtt(multi),
+  "WEBVTT\n\n00:00:00.500 --> 00:00:01.500\nHello world.\n\n00:00:02.000 --> 00:00:03.500\nThis is a test.\n",
+);
+assert.equal(segmentsToVtt([]), "WEBVTT\n");
+assert.equal(segmentsToVtt(docsSegments), "WEBVTT\n\n00:00:00.000 --> 00:00:01.840\nTurn on the kitchen lights\n");
 
 console.log("srt tests passed");

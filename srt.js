@@ -53,6 +53,36 @@ export function wordCount(text) {
   return text && text.trim() ? words.length : 0;
 }
 
+/** "HH:MM:SS.mmm" for WebVTT. */
+export function formatVttTime(ms) {
+  const total = Math.max(0, Math.round(ms));
+  const h = Math.floor(total / 3600000);
+  const m = Math.floor((total % 3600000) / 60000);
+  const s = Math.floor((total % 60000) / 1000);
+  const rem = total % 1000;
+  const pad = (n, w) => String(n).padStart(w, "0");
+  return `${pad(h, 2)}:${pad(m, 2)}:${pad(s, 2)}.${pad(rem, 3)}`;
+}
+
+/**
+ * WebVTT from segments. Same segment rules as SRT (finals only,
+ * missing timestamps fall back to sequential 1s blocks); an empty
+ * transcript still yields a valid header-only file.
+ */
+export function segmentsToVtt(segments) {
+  const finals = finalSegments(segments);
+  const blocks = [];
+  let cursor = 0;
+  for (const seg of finals) {
+    const from = typeof seg.fromTimestampMs === "number" ? seg.fromTimestampMs : cursor;
+    let to = typeof seg.toTimestampMs === "number" ? seg.toTimestampMs : from + 1000;
+    if (to <= from) to = from + 1000;
+    blocks.push(`${formatVttTime(from)} --> ${formatVttTime(to)}\n${seg.transcript.trim()}`);
+    cursor = to;
+  }
+  return blocks.length ? `WEBVTT\n\n${blocks.join("\n\n")}\n` : "WEBVTT\n";
+}
+
 /**
  * Merge final segments from a new streaming result into the finals seen
  * so far, in start-time order. Each transcribeStream() result carries

@@ -4,9 +4,15 @@ Speak to your browser. It records video of you speaking and transcribes
 you live — on your device, nothing uploaded.
 
 Open the app, allow camera + mic, hit **Start recording**. The transcript
-appears as you talk (grey = still forming, normal = final). Hit **Stop**
-and the recording is saved in the library with its transcript. Download
-the video (`.webm`) and the transcript (`.txt` and `.srt`).
+appears as you talk (grey = still forming, normal = final), each line
+with its `[mm:ss]` timestamp. Hit **Stop** and the recording is saved in
+the library with its transcript. Download the video (`.webm`) and the
+transcript (`.txt`, `.srt`, `.vtt`), copy the transcript with one tap, or
+export a new copy of the video with the captions burned in — font, size,
+color and position are yours to pick.
+
+Playing an entry highlights the line being spoken as the video plays;
+tapping a line jumps the video to it.
 
 You can also transcribe an existing audio or video file — same engine,
 no camera needed.
@@ -43,12 +49,13 @@ python3 -m http.server 8000   # then open http://localhost:8000
 
 ```bash
 node --check app.js && node --check transcriber.js && node --check audio-processor.js
-node --check storage.js && node --check srt.js
+node --check storage.js && node --check srt.js && node --check captions.js
 for t in test/*.test.mjs; do node "$t"; done
 ```
 
 ## Paid features
 
 Not in v1. The list lives in `TODO-PAID.md` (Pro tier, AI summary,
-transcript editing, search, VTT + burned-in captions, cloud backup).
-Transcription itself is never paywalled.
+transcript editing, search, cloud backup). Transcription itself is never
+paywalled. VTT + burned-in captions were on the paid list but the user
+chose all-free on 2026-11-18, so they are free.
