@@ -11,7 +11,7 @@ import {
   saveRecording, listRecordings, getRecording, deleteRecording,
   estimateUsage, formatTitle, formatDuration,
 } from "./storage.js";
-import { segmentsToText, segmentsToSrt, finalSegments, wordCount } from "./srt.js";
+import { segmentsToText, segmentsToSrt, finalSegments, wordCount, mergeFinalSegments } from "./srt.js";
 
 const $ = (id) => document.getElementById(id);
 const statusEl = $("status");
@@ -139,10 +139,56 @@ function renderLive() {
 }
 
 function updateLive(segments) {
-  liveFinals = (segments || []).filter((s) => s.isFinal);
-  liveInterim = (segments || []).filter((s) => !s.isFinal).pop() || null;
+  // Each transcribeStream() result carries only the latest segment(s),
+  // so finals accumulate across results — replacing the list would drop
+  // everything but the last sentence.
+  liveFinals = mergeFinalSegments(liveFinals, (segments || []).filter((s) => s.isFinal));
+  const interim = (segments || []).filter((s) => !s.isFinal).pop() || null;
+  // An interim hypothesis for a segment that just finalised must not
+  // render twice.
+  liveInterim = interim && typeof interim.fromTimestampMs === "number"
+    && liveFinals.some((f) => f.fromTimestampMs === interim.fromTimestampMs)
+    ? null : interim;
   renderLive();
 }
+
+// Copy helper: the live panel re-renders as words arrive, which wipes
+// any text selection, so copying goes through the data model, not the
+// selection. Falls back to a hidden textarea where the Clipboard API
+// is unavailable.
+async function copyText(text, button) {
+  const label = button.textContent;
+  let ok = false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    ok = true;
+  } catch (err) {
+    console.warn("copy failed:", err);
+  }
+  button.textContent = ok ? "Copied ✓" : "Copy failed";
+  setTimeout(() => { button.textContent = label; }, 2000);
+  return ok;
+}
+
+$("btn-copy-live").addEventListener("click", (e) => {
+  const text = segmentsToText(liveFinals);
+  if (!text) {
+    setStatus("Nothing to copy yet — the transcript is empty.");
+    return;
+  }
+  copyText(text, e.currentTarget);
+});
 
 async function handleChunk(chunk) {
   if (!transcriber) return;
@@ -463,6 +509,13 @@ async function openDetail(id) {
     new Blob([entry.text || ""], { type: "text/plain" }), `speaklog-${slug}.txt`);
   $("dl-srt").onclick = () => downloadBlob(
     new Blob([segmentsToSrt(entry.segments || [])], { type: "text/plain" }), `speaklog-${slug}.srt`);
+  $("btn-copy-detail").onclick = (e) => {
+    if (!entry.text) {
+      setStatus("Nothing to copy — no speech was detected in this recording.");
+      return;
+    }
+    copyText(entry.text, e.currentTarget);
+  };
   $("btn-delete-detail").onclick = async () => {
     if (confirm("Delete this recording? The video and transcript are gone for good.")) {
       await deleteRecording(entry.id);

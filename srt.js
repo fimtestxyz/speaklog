@@ -52,3 +52,30 @@ export function wordCount(text) {
   const words = (text || "").trim().split(/\s+/).filter(Boolean);
   return text && text.trim() ? words.length : 0;
 }
+
+/**
+ * Merge final segments from a new streaming result into the finals seen
+ * so far, in start-time order. Each transcribeStream() result carries
+ * only the most recent segment(s), so replacing the list would drop
+ * everything before it and the live panel would show just the last
+ * sentence; merging keeps the full transcript. A result that repeats
+ * the whole history dedupes by start timestamp, and a later segment
+ * with the same start timestamp overwrites the earlier one (the model
+ * correcting itself). Segments without a timestamp fall back to their
+ * text as the key. Interim segments are never merged.
+ */
+export function mergeFinalSegments(existing, incoming) {
+  const byKey = new Map();
+  const keyOf = (seg) =>
+    typeof seg.fromTimestampMs === "number"
+      ? `t:${seg.fromTimestampMs}`
+      : `x:${(seg.transcript || "").trim()}`;
+  for (const seg of [...(existing || []), ...(incoming || [])]) {
+    if (!seg || typeof seg.transcript !== "string" || seg.transcript.trim() === "") continue;
+    if (seg.isFinal === false) continue;
+    byKey.set(keyOf(seg), seg);
+  }
+  return [...byKey.values()].sort(
+    (a, b) => (a.fromTimestampMs ?? Infinity) - (b.fromTimestampMs ?? Infinity),
+  );
+}

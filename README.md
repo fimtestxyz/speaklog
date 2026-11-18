@@ -22,7 +22,7 @@ no upload, no tracking.
 - Video: `MediaRecorder` (webm, video + audio).
 - Transcription: [MediaPipe Audio Transcriber](https://developers.google.com/edge/mediapipe/solutions/audio/audio_transcriber)
   running on-device — NVIDIA's Parakeet TDT 0.6B v3 model (INT8,
-  ~615 MB, 25 European languages, CC-BY-4.0 — credit to NVIDIA). The
+  ~590 MB, 25 European languages, CC-BY-4.0 — credit to NVIDIA). The
   model downloads once on first run (with a progress bar) and is cached
   in the browser; afterwards it works offline. Streaming mode with
   interim results and millisecond segment timestamps, which is what the

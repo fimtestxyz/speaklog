@@ -34,10 +34,11 @@ plain ES modules served as static files.
 
 - Runtime `@mediapipe/tasks-audio@1.2.3` via jsDelivr
   (`audio_bundle.mjs`, WASM at `.../wasm/`).
-- Model: NVIDIA Parakeet TDT 0.6B v3, INT8, **~615 MB**, 25 European
-  languages, punctuated + capitalized output, CC-BY-4.0 (credit NVIDIA
-  in the UI and README). First run downloads it with a progress bar and
-  caches it in the Cache API (`speaklog-v1`).
+- Model: NVIDIA Parakeet TDT 0.6B v3, INT8, **~590 MB** (measured
+  586.1 MB on first live download), 25 European languages, punctuated
+  + capitalized output, CC-BY-4.0 (credit NVIDIA in the UI and README).
+  First run downloads it with a progress bar and caches it in the
+  Cache API (`speaklog-v1`).
 - **GPU delegate by default on web, CPU fallback** — `createTranscriber`
   retries on CPU when GPU creation fails.
 - Audio is always resampled to 16 kHz mono Float32 in JS before it
@@ -75,3 +76,15 @@ the change, it does not get "fixed later".
   both down the same day; it only worked once verified live. Same
   applies to the CPU delegate fallback here — verify it in E2E,
   don't just trust the code path.
+- **Streaming results carry only the latest segment(s).** Each
+  `transcribeStream()` result does not repeat the whole history, so
+  replacing the finals list drops everything but the last sentence.
+  Accumulate finals with `mergeFinalSegments` (keyed by
+  `fromTimestampMs`, dedupes replays, later corrections overwrite).
+  The saved transcript was never affected — `finishStream()` returns
+  the full list — only the live panel was.
+- **A live panel that re-renders wipes text selection.** The live
+  transcript re-renders on every audio chunk, so selecting text in it
+  never survives. Copy goes through the data model (Copy button +
+  Clipboard API with a textarea fallback), not the selection; the
+  transcript areas also carry explicit `user-select: text`.

@@ -47,7 +47,7 @@ official docs:
   WASM at `.../wasm/`. API: `FilesetResolver.forAudioTasks`,
   `AudioTranscriber.createFromOptions`, `transcribeStream(pcmChunk)`,
   `finishStream()`, `enableInterimResults: true`, `prewarm()`.
-- Model: NVIDIA Parakeet TDT 0.6B v3, INT8, **~615 MB**, 25 European
+- Model: NVIDIA Parakeet TDT 0.6B v3, INT8, **~590 MB**, 25 European
   languages, punctuated + capitalized output, CC-BY-4.0 (credit NVIDIA).
   File `parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm` at
   `https://huggingface.co/litert-community/parakeet-tdt-0.6b-v3/resolve/main/parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm`

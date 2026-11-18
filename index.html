@@ -25,7 +25,7 @@
   .preview-wrap { position: relative; background: #000; border-radius: 12px; overflow: hidden; aspect-ratio: 16 / 9; }
   #preview { width: 100%; height: 100%; object-fit: cover; display: block; }
   #caption-overlay { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); max-width: 90%; background: rgba(0, 0, 0, 0.75); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 1.05rem; text-align: center; }
-  #live-transcript { background: #fff; border: 1px solid #e5e5ea; border-radius: 12px; padding: 12px 16px; min-height: 120px; max-height: 320px; overflow-y: auto; }
+  #live-transcript { background: #fff; border: 1px solid #e5e5ea; border-radius: 12px; padding: 12px 16px; min-height: 120px; max-height: 320px; overflow-y: auto; user-select: text; -webkit-user-select: text; }
   #live-transcript p { margin: 6px 0; }
   #live-transcript .interim { color: #8e8e93; font-style: italic; }
   #rec-indicator { color: #d70015; font-weight: 600; }
@@ -37,7 +37,7 @@
   .entry-title { font-weight: 600; color: #1c1c1e; }
   .entry-meta { color: #6e6e73; font-size: 0.85rem; }
   #detail-player, #detail-audio { width: 100%; border-radius: 12px; background: #000; }
-  #detail-transcript { white-space: pre-wrap; background: #fff; border: 1px solid #e5e5ea; border-radius: 12px; padding: 12px 16px; }
+  #detail-transcript { white-space: pre-wrap; background: #fff; border: 1px solid #e5e5ea; border-radius: 12px; padding: 12px 16px; user-select: text; -webkit-user-select: text; }
   footer { color: #6e6e73; font-size: 0.85rem; padding-bottom: 32px; }
 </style>
 </head>
@@ -60,13 +60,16 @@
       <button id="btn-stop" type="button" disabled>■ Stop</button>
       <span id="rec-indicator" hidden><span class="dot"></span><span id="rec-time"></span></span>
     </div>
-    <p class="hint">First run downloads the ~615 MB transcription model once, then it is cached in your browser. The model transcribes English and 24 other European languages.</p>
+    <p class="hint">First run downloads the ~590 MB transcription model once, then it is cached in your browser. The model transcribes English and 24 other European languages.</p>
     <div id="model-progress" hidden>
       <div id="model-progress-label">Downloading transcription model…</div>
       <progress id="model-progress-bar" max="100" value="0"></progress>
       <span id="model-progress-text"></span>
     </div>
     <h2>Live transcript</h2>
+    <div class="controls">
+      <button id="btn-copy-live" type="button" class="secondary">Copy transcript</button>
+    </div>
     <div id="live-transcript" aria-live="polite"></div>
   </section>
 
@@ -94,6 +97,7 @@
       <button id="dl-video" type="button">Download video (.webm)</button>
       <button id="dl-txt" type="button">Download transcript (.txt)</button>
       <button id="dl-srt" type="button">Download transcript (.srt)</button>
+      <button id="btn-copy-detail" type="button">Copy transcript</button>
       <button id="btn-delete-detail" type="button" class="danger">Delete</button>
       <button id="btn-back" type="button" class="secondary">Back to library</button>
     </div>

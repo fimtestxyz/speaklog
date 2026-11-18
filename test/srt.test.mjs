@@ -1,7 +1,7 @@
 // Node tests for srt.js. Formatting from real MediaPipe segment objects.
 // Run: node test/srt.test.mjs
 import assert from "node:assert";
-import { formatSrtTime, finalSegments, segmentsToText, segmentsToSrt, wordCount } from "../srt.js";
+import { formatSrtTime, finalSegments, segmentsToText, segmentsToSrt, wordCount, mergeFinalSegments } from "../srt.js";
 
 // The example payload from the MediaPipe Audio Transcriber docs: one final
 // segment, one interim hypothesis.
@@ -66,5 +66,31 @@ assert.equal(wordCount("Turn on the kitchen lights"), 5);
 assert.equal(wordCount(""), 0);
 assert.equal(wordCount("   "), 0);
 assert.equal(wordCount("one  two\nthree"), 3);
+
+// Streaming merge: each transcribeStream() result carries only the latest
+// segment(s), so finals accumulate across results instead of replacing.
+const first = { transcript: "First sentence.", isFinal: true, fromTimestampMs: 0, toTimestampMs: 2000 };
+const second = { transcript: "Second sentence.", isFinal: true, fromTimestampMs: 2000, toTimestampMs: 4000 };
+assert.deepEqual(mergeFinalSegments([], [first]), [first]);
+assert.deepEqual(mergeFinalSegments([first], [second]), [first, second]);
+
+// A result that repeats the whole history dedupes — no doubled sentences.
+assert.deepEqual(mergeFinalSegments([first, second], [first, second]), [first, second]);
+
+// A later segment with the same start timestamp overwrites the earlier
+// one (the model correcting itself); out-of-order arrivals sort by time.
+const corrected = { transcript: "First sentence, corrected.", isFinal: true, fromTimestampMs: 0, toTimestampMs: 2000 };
+assert.deepEqual(mergeFinalSegments([first, second], [corrected]), [corrected, second]);
+const third = { transcript: "Third sentence.", isFinal: true, fromTimestampMs: 4000, toTimestampMs: 6000 };
+assert.deepEqual(mergeFinalSegments([first, third], [second]), [first, second, third]);
+
+// Interim segments are never merged; segments without timestamps key by text.
+assert.deepEqual(
+  mergeFinalSegments([first], [{ transcript: "half a", isFinal: false, fromTimestampMs: 2000 }]),
+  [first],
+);
+const noTsA = { transcript: "No time.", isFinal: true };
+const noTsB = { transcript: "Still no time.", isFinal: true };
+assert.deepEqual(mergeFinalSegments([noTsA], [noTsA, noTsB]), [noTsA, noTsB]);
 
 console.log("srt tests passed");
