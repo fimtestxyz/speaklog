@@ -1,0 +1,77 @@
+# Speaklog — agent notes
+
+Static web app: speak to the browser, it records video and transcribes
+live with on-device MediaPipe, saves both to IndexedDB, and downloads
+video + transcript. No build step, no server, no dependencies to install —
+plain ES modules served as static files.
+
+## Hard rules
+
+- **Video and audio never leave the device.** Recording, transcription,
+  storage and downloads all happen in the browser. Never add an upload,
+  a backend call, tracking, or analytics.
+- **No identification.** The app transcribes speech only. Never add
+  speaker identification or face recognition.
+- **Transcription is never paywalled.** The engine is free and on-device;
+  paid features (see `TODO-PAID.md`) charge for what surrounds it.
+  Never put live transcription behind a paywall.
+
+## Layout
+
+| File | What it does |
+| --- | --- |
+| `index.html` | Page structure: record, live transcript, file transcribe, library, detail |
+| `app.js` | UI + orchestration: MediaRecorder, worklet wiring, library, downloads |
+| `transcriber.js` | MediaPipe wrapper: model download/progress/cache, GPU→CPU fallback, resampling |
+| `audio-processor.js` | AudioWorkletProcessor: buffers mic PCM, posts 3200-sample Float32 chunks |
+| `storage.js` | IndexedDB wrapper: save/list/get/delete recordings, usage estimate |
+| `srt.js` | Transcript formatting: plain text + SRT from segments |
+| `test/*.test.mjs` | Node unit tests, one per module |
+| `spec.md` | Product spec (source of truth for scope) |
+| `TODO-PAID.md` | Paid features — not built in v1 |
+
+## Models (verified live)
+
+- Runtime `@mediapipe/tasks-audio@1.2.3` via jsDelivr
+  (`audio_bundle.mjs`, WASM at `.../wasm/`).
+- Model: NVIDIA Parakeet TDT 0.6B v3, INT8, **~615 MB**, 25 European
+  languages, punctuated + capitalized output, CC-BY-4.0 (credit NVIDIA
+  in the UI and README). First run downloads it with a progress bar and
+  caches it in the Cache API (`speaklog-v1`).
+- **GPU delegate by default on web, CPU fallback** — `createTranscriber`
+  retries on CPU when GPU creation fails.
+- Audio is always resampled to 16 kHz mono Float32 in JS before it
+  reaches the model (`resampleTo16k` in `transcriber.js`); the
+  transcriber is always created with `sampleRateHz: 16000`.
+
+## How to test
+
+```bash
+node --check app.js && node --check transcriber.js && node --check audio-processor.js
+node --check storage.js && node --check srt.js
+for t in test/*.test.mjs; do node "$t"; done
+```
+
+Every change gets: unit tests first, then a live end-to-end check on
+the deployed site (Vercel auto-deploys on push to `main`; the repo and
+hosting are set up by the parent agent — this workspace is local-only
+until then). CI runs the same checks on every push — a red run blocks
+the change, it does not get "fixed later".
+
+## Lessons already paid for
+
+- **Errors must be visible.** The status/error lines live at the top
+  of the page, outside any hidden section. Stickerify once hid a
+  failure message inside a collapsed workbench and the user saw
+  nothing at all — same bug class, fixed here by construction.
+- **Test the real call shape.** A test once passed while the app was
+  broken, because the test sorted bare defs while the app sorts
+  `{def, rec}` wrappers. Tests here use the data shape the call site
+  actually passes (real segment objects, the real
+  `createFromOptions` options, a fake IndexedDB behind the real
+  storage calls).
+- **A fallback that is never live-tested is not a fallback.**
+  Stickerify's CORS fix shipped with two proxy fallbacks that were
+  both down the same day; it only worked once verified live. Same
+  applies to the CPU delegate fallback here — verify it in E2E,
+  don't just trust the code path.
