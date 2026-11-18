@@ -14,6 +14,7 @@
   h3 { margin: 16px 0 6px; font-size: 1rem; }
   p { margin: 8px 0; }
   .muted, .hint { color: #6e6e73; font-size: 0.9rem; }
+  #model-status.ready { color: #1a7f37; font-weight: 600; }
   #status { min-height: 1.5em; font-weight: 600; }
   #error { background: #fdecea; border: 1px solid #f5c6cb; color: #721c24; padding: 10px 12px; border-radius: 8px; }
   button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
@@ -60,8 +61,12 @@
       <video id="preview" autoplay playsinline muted></video>
       <div id="caption-overlay" hidden></div>
     </div>
+    <p id="model-status" class="hint">Checking transcription model…</p>
     <div class="controls">
-      <button id="btn-start" type="button" class="primary">● Start recording</button>
+      <button id="btn-load-model" type="button" hidden>Load transcription model</button>
+    </div>
+    <div class="controls">
+      <button id="btn-start" type="button" class="primary" disabled>● Start recording</button>
       <button id="btn-stop" type="button" disabled>■ Stop</button>
       <span id="rec-indicator" hidden><span class="dot"></span><span id="rec-time"></span></span>
     </div>

@@ -89,6 +89,11 @@ Vercel + GitHub Pages, like stickerify. Static only — no backend server.
 - **Timestamped live transcript**: every final line carries its
   `[mm:ss]` timestamp; the panel accumulates (streaming results carry
   only the latest segment — see CLAUDE.md).
+- **Model status on page open**: the page shows whether the
+  transcription model is ready, already downloaded (cached), or not
+  downloaded yet. A Load model button downloads it once (~590 MB)
+  and caches it; **Start recording stays disabled until the model is
+  ready**, so recording never starts without transcription.
 - **Synced playback**: in an entry, the line being spoken is
   highlighted as the video plays; tapping a line seeks the video to it.
 - **Captions burned into video** (free since 2026-11-18, user chose
@@ -117,6 +122,9 @@ chose all-free on 2026-11-18, so they are free (see Decision 4).
 
 - Start → camera preview live, recording indicator on, transcript
   updates within ~1s of speaking.
+- Page open → the model status is shown (ready / cached /
+  not downloaded); Start recording is disabled until the model is
+  ready, and Load model downloads it once (~590 MB) and caches it.
 - Stop → entry saved, appears in the library, plays back with sound.
 - Download → the `.webm` plays in a standard player; the `.txt`
   matches the on-screen transcript; the `.srt` timestamps line up with

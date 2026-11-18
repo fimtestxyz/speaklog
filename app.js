@@ -6,7 +6,7 @@
 // at the top of the page, outside any hidden section, so a failure is
 // always visible — never silent, never hidden behind a collapsed panel.
 
-import { createTranscriber, resampleTo16k, downmixToMono, MODEL_SIZE_MB } from "./transcriber.js";
+import { createTranscriber, isModelCached, resampleTo16k, downmixToMono, MODEL_SIZE_MB } from "./transcriber.js";
 import {
   saveRecording, listRecordings, getRecording, deleteRecording,
   estimateUsage, formatTitle, formatDuration,
@@ -67,6 +67,51 @@ function hideProgress() { progressBox.hidden = true; }
 let transcriber = null;
 let transcriberReady = null;
 
+// Model status on page open: Start recording stays disabled until the
+// model is loaded and ready — the user loads it explicitly with the
+// Load model button (first run downloads ~590 MB once, then it is
+// cached; later runs only initialise from the cache).
+function setModelReadyState() {
+  const status = $("model-status");
+  status.textContent = `Transcription model ready ✓ (${transcriber?.delegate || "CPU"} delegate).`;
+  status.classList.add("ready");
+  $("btn-load-model").hidden = true;
+  startBtn.disabled = false;
+  setStatus(`Transcription ready (${transcriber?.delegate || "CPU"} delegate).`);
+}
+
+async function refreshModelStatus() {
+  const status = $("model-status");
+  const loadBtn = $("btn-load-model");
+  if (transcriber) { setModelReadyState(); return; }
+  status.textContent = "Checking transcription model…";
+  let cached = false;
+  try { cached = await isModelCached(); } catch { cached = false; }
+  if (transcriber) { setModelReadyState(); return; } // loaded meanwhile
+  if (cached) {
+    status.textContent = `Transcription model downloaded ✓ (cached, ~${MODEL_SIZE_MB} MB) — tap Load model to get it ready.`;
+    loadBtn.textContent = "Load model (already downloaded)";
+  } else {
+    status.textContent = `Transcription model not downloaded yet (~${MODEL_SIZE_MB} MB) — tap Load model to download it once; it stays cached in this browser.`;
+    loadBtn.textContent = "Load transcription model";
+  }
+  loadBtn.hidden = false;
+  startBtn.disabled = true;
+}
+
+$("btn-load-model").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  clearError();
+  try {
+    await ensureTranscriber();
+    // setModelReadyState runs inside ensureTranscriber.
+  } catch (err) {
+    showError(`Could not load the transcription model: ${err?.message || err}. Check your connection and try again.`);
+    btn.disabled = false;
+  }
+});
+
 function ensureTranscriber() {
   if (transcriber) return Promise.resolve(transcriber);
   if (transcriberReady) return transcriberReady;
@@ -87,7 +132,7 @@ function ensureTranscriber() {
     } finally {
       hideProgress();
     }
-    setStatus(`Transcription ready (${transcriber.delegate} delegate).`);
+    setModelReadyState();
     return transcriber;
   })().catch((err) => {
     transcriberReady = null;
@@ -621,3 +666,4 @@ $("btn-back").addEventListener("click", () => { $("detail").hidden = true; });
 
 renderLive();
 refreshLibrary();
+refreshModelStatus();

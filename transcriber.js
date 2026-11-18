@@ -9,8 +9,9 @@
 //   { modelAssetPath, delegate }, sampleRateHz, enableInterimResults }),
 //   prewarm(), transcribeStream(Float32Array) -> { text, segments },
 //   finishStream(), transcribe(samples, endOfStream).
-// - Model: NVIDIA Parakeet TDT 0.6B v3, INT8, ~615 MB, 25 European
-//   languages, CC-BY-4.0 (credit NVIDIA in the UI/README).
+// - Model: NVIDIA Parakeet TDT 0.6B v3, INT8, ~590 MB (measured 586.1
+//   MB on first download, 2026-11-18), 25 European languages, CC-BY-4.0
+//   (credit NVIDIA in the UI/README).
 // - Delegate: GPU by default on web, CPU fallback. The GPU delegate can
 //   misbehave on iOS Safari (stickerify learned this with segmentation),
 //   so CPU must remain a working fallback — create() retries on CPU
@@ -24,7 +25,25 @@ export const AUDIO_WASM_URL =
 export const MODEL_URL =
   "https://huggingface.co/litert-community/parakeet-tdt-0.6b-v3/resolve/main/parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm";
 export const MODEL_CACHE_NAME = "speaklog-v1";
-export const MODEL_SIZE_MB = 615;
+export const MODEL_SIZE_MB = 590;
+
+/**
+ * True when the model file is already in the Cache API (a previous
+ * download), so loading it needs no network. False when the Cache API
+ * is unavailable or the file is not there. Used on page open to show
+ * the model status before the user taps Load model.
+ * deps: { cachesImpl, modelUrl }.
+ */
+export async function isModelCached({ cachesImpl, modelUrl = MODEL_URL } = {}) {
+  const caches = cachesImpl || globalThis.caches;
+  if (!caches) return false;
+  try {
+    const cache = await caches.open(MODEL_CACHE_NAME);
+    return !!(await cache.match(modelUrl));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Linear-interpolation resample of mono PCM to 16 kHz. The transcriber

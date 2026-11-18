@@ -11,6 +11,11 @@ transcript (`.txt`, `.srt`, `.vtt`), copy the transcript with one tap, or
 export a new copy of the video with the captions burned in — font, size,
 color and position are yours to pick.
 
+The page shows the transcription model's status on open. If it was
+never loaded, tap **Load model** first (one ~590 MB download, then
+cached); **Start recording** stays disabled until the model is ready,
+so a recording never starts without transcription.
+
 Playing an entry highlights the line being spoken as the video plays;
 tapping a line jumps the video to it.
 

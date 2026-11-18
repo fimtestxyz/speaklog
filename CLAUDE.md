@@ -21,8 +21,8 @@ plain ES modules served as static files.
 | File | What it does |
 | --- | --- |
 | `index.html` | Page structure: record, live transcript, file transcribe, library, detail |
-| `app.js` | UI + orchestration: MediaRecorder, worklet wiring, library, downloads |
-| `transcriber.js` | MediaPipe wrapper: model download/progress/cache, GPU→CPU fallback, resampling |
+| `app.js` | UI + orchestration: MediaRecorder, worklet wiring, library, downloads, model status + Load model + Start gating |
+| `transcriber.js` | MediaPipe wrapper: model download/progress/cache, GPU→CPU fallback, resampling, `isModelCached` (page-open status check) |
 | `audio-processor.js` | AudioWorkletProcessor: buffers mic PCM, posts 3200-sample Float32 chunks |
 | `storage.js` | IndexedDB wrapper: save/list/get/delete recordings, usage estimate |
 | `srt.js` | Transcript formatting: plain text + SRT + VTT from segments |

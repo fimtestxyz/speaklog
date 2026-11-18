@@ -4,6 +4,7 @@
 import assert from "node:assert";
 import {
   AUDIO_BUNDLE_URL, AUDIO_WASM_URL, MODEL_URL, MODEL_CACHE_NAME,
+  MODEL_SIZE_MB, isModelCached,
   downloadModelBlobWithProgress, createTranscriber,
   resampleTo16k, downmixToMono,
 } from "../transcriber.js";
@@ -22,6 +23,20 @@ assert.equal(
   "https://huggingface.co/litert-community/parakeet-tdt-0.6b-v3/resolve/main/parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm",
 );
 assert.equal(MODEL_CACHE_NAME, "speaklog-v1");
+assert.equal(MODEL_SIZE_MB, 590); // measured first download: 586.1 MB
+
+// --- isModelCached ------------------------------------------------------------
+{
+  // Cached file present -> true; empty cache -> false.
+  const hit = stubCache(new Map([[MODEL_URL, { blob: async () => new Blob([]) }]]));
+  assert.equal(await isModelCached({ cachesImpl: stubCaches(hit) }), true);
+  assert.equal(await isModelCached({ cachesImpl: stubCaches(stubCache()) }), false);
+  // No Cache API at all (Node, insecure context) -> false, not a throw.
+  assert.equal(await isModelCached({ cachesImpl: null }), false);
+  // A failing caches.open -> false, not a throw.
+  const failing = { open: async () => { throw new Error("nope"); } };
+  assert.equal(await isModelCached({ cachesImpl: failing }), false);
+}
 
 // --- Stubs -----------------------------------------------------------------
 function stubCache(initial = new Map()) {
