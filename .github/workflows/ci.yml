@@ -19,6 +19,7 @@ jobs:
           node --check audio-processor.js
           node --check storage.js
           node --check srt.js
+          node --check captions.js
       - name: Unit tests
         run: |
           for t in test/*.test.mjs; do node "$t"; done
