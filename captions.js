@@ -28,9 +28,19 @@ export function formatClock(ms) {
 
 /** The segment spoken at timeMs, or null (gaps, before the first, after the last). */
 export function segmentAtTime(segments, timeMs) {
-  for (const seg of segments || []) {
-    if (typeof seg.fromTimestampMs !== "number" || typeof seg.toTimestampMs !== "number") continue;
-    if (timeMs >= seg.fromTimestampMs && timeMs < seg.toTimestampMs) return seg;
+  const list = segments || [];
+  for (let i = 0; i < list.length; i++) {
+    const seg = list[i];
+    if (typeof seg.fromTimestampMs !== "number") continue;
+    // A segment without an end timestamp runs until the next segment
+    // starts (or 5s past its start for the last one) — the model does
+    // not always stamp an end, and without this the caption, the
+    // highlight and the burn-in all silently show nothing for it.
+    const next = list[i + 1];
+    const to = typeof seg.toTimestampMs === "number"
+      ? seg.toTimestampMs
+      : (typeof next?.fromTimestampMs === "number" ? next.fromTimestampMs : seg.fromTimestampMs + 5000);
+    if (timeMs >= seg.fromTimestampMs && timeMs < to) return seg;
   }
   return null;
 }

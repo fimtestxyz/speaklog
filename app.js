@@ -12,7 +12,7 @@ import {
   estimateUsage, formatTitle, formatDuration,
 } from "./storage.js";
 import { segmentsToText, segmentsToSrt, segmentsToVtt, finalSegments, wordCount, mergeFinalSegments } from "./srt.js";
-import { segmentAtTime, formatClock, burnCaptions } from "./captions.js";
+import { segmentAtTime, formatClock, captionFont, burnCaptions } from "./captions.js";
 
 const $ = (id) => document.getElementById(id);
 const statusEl = $("status");
@@ -361,7 +361,12 @@ async function stopRecording() {
     let segments = [];
     try {
       const fin = await transcriber.finishStream();
-      segments = finalSegments(fin.segments || []);
+      // finishStream() may return only the final chunk, not the whole
+      // history — the same trap the live panel hit — so merge it into
+      // the finals accumulated live. Merging dedupes by start
+      // timestamp, so a full-history result is safe too; either way
+      // the saved recording keeps the complete transcript.
+      segments = mergeFinalSegments(liveFinals, finalSegments(fin.segments || []));
     } catch (err) {
       console.warn("finishStream failed:", err);
       segments = liveFinals;
@@ -535,8 +540,41 @@ $("library-list").addEventListener("click", async (e) => {
 let detailMedia = null;
 let detailSegments = [];
 let lastActiveFrom = -1;
+const detailCaptionEl = $("detail-caption-overlay");
+
+function detailCaptionStyle() {
+  return {
+    font: $("cap-font").value,
+    size: $("cap-size").value,
+    color: $("cap-color").value,
+    position: $("cap-position").value,
+  };
+}
+
+// Subtitles on the saved video itself while it plays in the app —
+// the burn-in export alone does not put captions on in-app playback,
+// so the detail player overlays the active segment, styled by the
+// same caption controls the export uses.
+function updateDetailCaption(timeMs) {
+  if (!detailMedia || detailMedia.tagName !== "VIDEO") { detailCaptionEl.hidden = true; return; }
+  const seg = segmentAtTime(detailSegments, timeMs);
+  if (!seg) { detailCaptionEl.hidden = true; return; }
+  const style = detailCaptionStyle();
+  detailCaptionEl.style.font = captionFont(style, detailMedia.videoHeight || 720);
+  detailCaptionEl.style.color = style.color || "#ffffff";
+  if (style.position === "top") {
+    detailCaptionEl.style.top = "12px";
+    detailCaptionEl.style.bottom = "auto";
+  } else {
+    detailCaptionEl.style.top = "auto";
+    detailCaptionEl.style.bottom = "12px";
+  }
+  detailCaptionEl.textContent = seg.transcript;
+  detailCaptionEl.hidden = false;
+}
 
 function highlightSegment(timeMs) {
+  updateDetailCaption(timeMs);
   const rows = $("detail-transcript").querySelectorAll(".seg-row");
   if (!rows.length) return;
   const active = segmentAtTime(detailSegments, timeMs);
@@ -567,17 +605,18 @@ async function openDetail(id) {
   const isVideo = entry.kind === "camera"
     || (entry.mediaBlob && entry.mediaBlob.type && entry.mediaBlob.type.startsWith("video/"));
   if (isVideo) {
-    player.hidden = false;
+    $("detail-player-wrap").hidden = false;
     audio.hidden = true;
     player.src = url;
     detailMedia = player;
   } else {
-    player.hidden = true;
+    $("detail-player-wrap").hidden = true;
     audio.hidden = false;
     audio.src = url;
     detailMedia = audio;
   }
   $("dl-video").hidden = entry.kind !== "camera";
+  $("dl-video-hint").hidden = entry.kind !== "camera";
   detailSegments = entry.segments || [];
   lastActiveFrom = -1;
   detailMedia.ontimeupdate = () => highlightSegment(detailMedia.currentTime * 1000);
@@ -617,6 +656,10 @@ async function openDetail(id) {
     new Blob([segmentsToVtt(entry.segments || [])], { type: "text/vtt" }), `speaklog-${slug}.vtt`);
   // Caption burn-in is only offered for video with something to burn.
   $("caption-export").hidden = !(isVideo && detailSegments.length);
+  // A style change re-renders the on-video caption at once.
+  for (const id of ["cap-font", "cap-size", "cap-color", "cap-position"]) {
+    $(id).onchange = () => updateDetailCaption((detailMedia?.currentTime || 0) * 1000);
+  }
   $("burn-status").textContent = "";
   $("btn-burn").onclick = async (e) => {
     const btn = e.currentTarget;

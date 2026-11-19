@@ -84,6 +84,19 @@ assert.deepEqual(mergeFinalSegments([first, second], [corrected]), [corrected, s
 const third = { transcript: "Third sentence.", isFinal: true, fromTimestampMs: 4000, toTimestampMs: 6000 };
 assert.deepEqual(mergeFinalSegments([first, third], [second]), [first, second, third]);
 
+// Stopping a camera recording merges the finishStream() tail into the
+// finals accumulated live. If finishStream returns only the last chunk,
+// the saved recording still keeps the full transcript; if it returns
+// the whole history, the merge dedupes and nothing doubles.
+assert.deepEqual(
+  mergeFinalSegments([first, second], [third]),
+  [first, second, third],
+);
+assert.deepEqual(
+  mergeFinalSegments([first, second, third], [first, second, third]),
+  [first, second, third],
+);
+
 // Interim segments are never merged; segments without timestamps key by text.
 assert.deepEqual(
   mergeFinalSegments([first], [{ transcript: "half a", isFinal: false, fromTimestampMs: 2000 }]),

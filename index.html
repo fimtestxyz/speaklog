@@ -20,6 +20,7 @@
   button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
   button:disabled { opacity: 0.45; cursor: default; }
   button.primary { background: #d70015; border-color: #d70015; color: #fff; font-weight: 600; }
+  button.primary:disabled { background: #aeaeb2; border-color: #aeaeb2; }
   button.secondary { background: #f2f2f7; }
   button.danger { color: #d70015; border-color: #f5c6cb; }
   .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
@@ -37,7 +38,10 @@
   .entry-open { flex: 1; text-align: left; border: none; background: none; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; }
   .entry-title { font-weight: 600; color: #1c1c1e; }
   .entry-meta { color: #6e6e73; font-size: 0.85rem; }
-  #detail-player, #detail-audio { width: 100%; border-radius: 12px; background: #000; }
+  #detail-audio { width: 100%; border-radius: 12px; background: #000; }
+  .detail-player-wrap { position: relative; background: #000; border-radius: 12px; overflow: hidden; }
+  #detail-player { width: 100%; display: block; }
+  #detail-caption-overlay { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); max-width: 90%; background: rgba(0, 0, 0, 0.75); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 1.05rem; text-align: center; }
   #detail-transcript { white-space: pre-wrap; background: #fff; border: 1px solid #e5e5ea; border-radius: 12px; padding: 12px 16px; user-select: text; -webkit-user-select: text; }
   .ts { color: #8e8e93; font-variant-numeric: tabular-nums; }
   .seg-row { display: block; width: 100%; text-align: left; background: #fff; border: 1px solid #e5e5ea; border-radius: 8px; padding: 8px 12px; margin: 6px 0; cursor: pointer; }
@@ -99,12 +103,15 @@
   <section id="detail" hidden>
     <h2 id="detail-title"></h2>
     <p id="detail-meta" class="hint"></p>
-    <video id="detail-player" controls playsinline hidden></video>
+    <div class="detail-player-wrap" id="detail-player-wrap" hidden>
+      <video id="detail-player" controls playsinline></video>
+      <div id="detail-caption-overlay" hidden></div>
+    </div>
     <audio id="detail-audio" controls hidden></audio>
     <h3>Transcript</h3>
     <div id="detail-transcript"></div>
     <div class="controls">
-      <button id="dl-video" type="button">Download video (.webm)</button>
+      <button id="dl-video" type="button">Download video (.webm, no captions)</button>
       <button id="dl-txt" type="button">Download transcript (.txt)</button>
       <button id="dl-srt" type="button">Download transcript (.srt)</button>
       <button id="dl-vtt" type="button">Download transcript (.vtt)</button>
@@ -112,6 +119,7 @@
       <button id="btn-delete-detail" type="button" class="danger">Delete</button>
       <button id="btn-back" type="button" class="secondary">Back to library</button>
     </div>
+    <p id="dl-video-hint" class="hint">The video above is the raw recording — it has no captions in it. For a copy with subtitles burned in, use “Download video with captions” below.</p>
     <div id="caption-export" hidden>
       <h3>Captions on video</h3>
       <div class="controls">

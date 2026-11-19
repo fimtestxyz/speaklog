@@ -27,6 +27,19 @@ assert.equal(segmentAtTime(segs, -100), null);
 assert.equal(segmentAtTime([], 1000), null);
 assert.equal(segmentAtTime([{ transcript: "No time.", isFinal: true }], 1000), null);
 
+// A segment without an end timestamp runs until the next one starts,
+// and the last one gets a 5s grace — otherwise captions, highlight
+// and burn-in all silently show nothing for it.
+const noEnd = [
+  { transcript: "First.", isFinal: true, fromTimestampMs: 0 },
+  { transcript: "Second.", isFinal: true, fromTimestampMs: 3000, toTimestampMs: 6000 },
+];
+assert.equal(segmentAtTime(noEnd, 1500), noEnd[0]);
+assert.equal(segmentAtTime(noEnd, 3000), noEnd[1]);
+const noEndLast = [{ transcript: "Only.", isFinal: true, fromTimestampMs: 1000 }];
+assert.equal(segmentAtTime(noEndLast, 4000), noEndLast[0]);
+assert.equal(segmentAtTime(noEndLast, 6000), null);
+
 assert.equal(captionFontPx({ size: "small" }, 720), 29);
 assert.equal(captionFontPx({ size: "medium" }, 720), 40);
 assert.equal(captionFontPx({ size: "large" }, 720), 50);

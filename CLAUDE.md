@@ -82,8 +82,14 @@ the change, it does not get "fixed later".
   replacing the finals list drops everything but the last sentence.
   Accumulate finals with `mergeFinalSegments` (keyed by
   `fromTimestampMs`, dedupes replays, later corrections overwrite).
-  The saved transcript was never affected — `finishStream()` returns
-  the full list — only the live panel was.
+  This applies to the SAVED transcript too: `stopRecording` merges the
+  `finishStream()` result into the live-accumulated finals instead of
+  trusting it alone, because whether `finishStream()` returns the full
+  history or only the final chunk was never verified live (the cloud
+  browser has no camera, so no camera recording has ever been
+  end-to-end tested) — the merge is correct under either behaviour.
+  An earlier version of this note claimed the saved transcript was
+  never affected; that was an assumption, not a verified fact.
 - **A live panel that re-renders wipes text selection.** The live
   transcript re-renders on every audio chunk, so selecting text in it
   never survives. Copy goes through the data model (Copy button +
@@ -96,3 +102,13 @@ the change, it does not get "fixed later".
   muted during export, so the user hears it playing (that is the
   feedback that it is working). Only video entries get the button;
   audio-only file entries cannot burn captions onto nothing.
+- **Playback needs its own caption overlay.** The burn-in export
+  alone does not put subtitles on the video you play in the app — the
+  detail player wraps the video and overlays the active segment while
+  it plays, styled by the same caption controls the export uses, so
+  what you see on playback matches what the export burns in.
+- **A segment without an end timestamp is not a gap.** The model
+  does not always stamp `toTimestampMs`; `segmentAtTime` treats such
+  a segment as running until the next one starts (5s grace for the
+  last), otherwise the caption, the row highlight and the burn-in all
+  silently show nothing for it.

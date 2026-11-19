@@ -101,6 +101,16 @@ Vercel + GitHub Pages, like stickerify. Static only — no backend server.
   picture — font (sans/serif/mono), size, color, position
   (bottom/top); plays through in real time, so export takes as long
   as the video.
+- **Captions on playback** (free, added 2026-11-19): playing a saved
+  video in the app shows the active segment as a subtitle over the
+  picture, using the same font/size/color/position controls as the
+  burn-in export — the plain "Download video (.webm)" is the raw
+  recording without captions; the captioned copy comes from the
+  burn-in export.
+- **Camera recordings save the full transcript** (fixed 2026-11-19):
+  stopping a recording merges the `finishStream()` result into the
+  finals accumulated live, so the saved entry keeps every sentence,
+  not just the last one.
 - Desktop + mobile browsers (Chrome/Edge best; Safari/Firefox need
   WebGPU or CPU fallback for the model — verify in E2E).
 
